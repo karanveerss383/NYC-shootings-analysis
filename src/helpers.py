@@ -6,12 +6,18 @@ analysis, and visualization.
 """
 import pandas as pd
 
-def fill_nan(data, columns_values:dict):
+def fill_nan(data, columns_values={}):
 
     """
-    This function takes in a dataframe and dictionary of columns with the values to fill in place of 'NaN'
+    This function takes in a dataframe and dictionary of columns with the values to fill in place of 'NaN',
+    if no column_values dictionary is passed, it fill 'Unknown', in place of every 'NaN' for every column
     and returns a dataframe
     """
+    if (columns_values == {}):
+        for i in data.columns:
+            data[i] = data[i].fillna('Unknown')
+        return data
+
 
     for i in columns_values.keys():
         data[i] = data[i].fillna(columns_values[i])
