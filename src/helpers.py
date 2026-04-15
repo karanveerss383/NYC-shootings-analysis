@@ -1,39 +1,42 @@
 """
-Helper functions for [Your Project Name].
+Helper functions for Shooting Incidents Analysis.
 
 This module contains reusable functions for data cleaning,
 analysis, and visualization.
 """
 import pandas as pd
 
-def fill_nan(data, columns_values={}):
-
+def fill_nan(data, columns_values=None):
     """
     This function takes in a dataframe and dictionary of columns with the values to fill in place of 'NaN',
     if no column_values dictionary is passed, it fill 'Unknown', in place of every 'NaN' for every column
     and returns a dataframe
     """
-    if (columns_values == {}):
-        for i in data.columns:
-            data[i] = data[i].fillna('Unknown')
-        return data
+    from pandas.api.types import is_string_dtype
 
+    if (columns_values is None):
+
+        for i in data.columns:
+            if (is_string_dtype(data[i])):
+                data[i] = data[i].fillna('Unknown')
+        return data
 
     for i in columns_values.keys():
         data[i] = data[i].fillna(columns_values[i])
     return data
 
-def title_case(data, columns=[]):
+def title_case(data, columns=None):
     
     """
     This funtion takes in a dataframe and columns list, to change the format to title-case, to improve readability
     and returns dataframe
     """
-    
-    if (columns == []):
+    from pandas.api.types import is_string_dtype
+
+    if (columns is None):
         columns = data.columns
     for column in columns:
-        if (data[column].dtype == 'object'):
+        if (is_string_dtype(data[column])):
             data[column] = data[column].str.title()
     return data
 
@@ -45,10 +48,34 @@ def datetimecols(data, columns, column_name):
     returing the final dataframe
     """
 
-
     if (len(columns) != 2):
         raise IndexError (f"expected 2 columns got {len(columns)}")
     data[column_name] = data[columns[0]] + ' ' + data[columns[1]]
     data[column_name] = pd.to_datetime(data[column_name])
     data = data.drop(columns=columns, axis=1)
+    return data
+
+def auto_removal(data, columns_check):
+
+    """
+    This functions takes in a dataframe and a list of columns and removes the rows which have 'Unknown', NaN or NaT values in each of those columns
+    and returns the final dataframe 
+    """
+
+    from pandas.api.types import is_string_dtype, is_numeric_dtype, is_datetime64_any_dtype
+    given_types = data[columns_check].dtypes
+    check_values = []
+    for i in given_types:
+        if is_string_dtype(i):
+            check_values.append('Unknown')
+        elif is_datetime64_any_dtype(i):
+            check_values.append(pd.NaT)
+        elif is_numeric_dtype(i):
+            check_values.append(pd.NA)
+    checker_df = data
+    for i, x in enumerate(columns_check):
+        checker_df = checker_df[checker_df[x] == check_values[i]]
+    
+    removal_index = checker_df.index
+    data = data.drop(removal_index)
     return data
