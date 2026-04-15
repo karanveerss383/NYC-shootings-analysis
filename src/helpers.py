@@ -12,12 +12,12 @@ def fill_nan(data, columns_values=None):
     if no column_values dictionary is passed, it fill 'Unknown', in place of every 'NaN' for every column
     and returns a dataframe
     """
-    from pandas.api.types import is_string_dtype
+    from pandas.api.types import is_object_dtype
 
     if (columns_values is None):
 
         for i in data.columns:
-            if (is_string_dtype(data[i])):
+            if (is_object_dtype(data[i])):
                 data[i] = data[i].fillna('Unknown')
         return data
 
@@ -31,12 +31,12 @@ def title_case(data, columns=None):
     This funtion takes in a dataframe and columns list, to change the format to title-case, to improve readability
     and returns dataframe
     """
-    from pandas.api.types import is_string_dtype
+    from pandas.api.types import is_object_dtype
 
     if (columns is None):
         columns = data.columns
     for column in columns:
-        if (is_string_dtype(data[column])):
+        if (is_object_dtype(data[column])):
             data[column] = data[column].str.title()
     return data
 
@@ -62,20 +62,9 @@ def auto_removal(data, columns_check):
     and returns the final dataframe 
     """
 
-    from pandas.api.types import is_string_dtype, is_numeric_dtype, is_datetime64_any_dtype
-    given_types = data[columns_check].dtypes
-    check_values = []
-    for i in given_types:
-        if is_string_dtype(i):
-            check_values.append('Unknown')
-        elif is_datetime64_any_dtype(i):
-            check_values.append(pd.NaT)
-        elif is_numeric_dtype(i):
-            check_values.append(pd.NA)
-    checker_df = data
-    for i, x in enumerate(columns_check):
-        checker_df = checker_df[checker_df[x] == check_values[i]]
+    mask = data[columns_check].isna() | (data[columns_check] == 'Unknown')
+    final_mask = mask[columns_check[0]]
+    for i in range(1,len(columns_check)):
+        final_mask = final_mask & mask[columns_check[i]]
     
-    removal_index = checker_df.index
-    data = data.drop(removal_index)
-    return data
+    return data[~final_mask]
